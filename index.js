@@ -2,6 +2,8 @@ const http = require("http");
 const express = require("express");
 const path = require("path");
 const { Server } = require("socket.io");
+const { cwd } = require("node:process");
+console.log(`Current directory: ${cwd()}`);
 
 const app = express();
 const port = 3000;
