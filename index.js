@@ -1,79 +1,43 @@
-const fs = require("fs");
+const http = require("http");
 const express = require("express");
-require("dotenv").config();
+const path = require("path");
+const { Server } = require("socket.io");
+const { cwd } = require("node:process");
+console.log(`Current directory: ${cwd()}`);
+
 const app = express();
-const mongoose = require("mongoose");
+const port = 3000;
 
-const demoPromise = new Promise((res, rej) => {
-  let success = true;
+// Create HTTP server
+const server = http.createServer(app);
 
-  if (success) res("Work done!");
-  else rej("Something went wrong");
-});
+// Attach socket.io
+const io = new Server(server);
 
-demoPromise.then((msg) => console.log(msg)).catch((err) => console.log(err));
+// ========== SOCKET.IO ==========
+io.on("connection", (socket) => {
+  console.log("New user connected:", socket.id);
 
-function greet(name, callback) {
-  console.log("Hello", name);
-  callback();
-}
-
-greet("Dhruvil", () => {
-  console.log("Welcome!");
-});
-
-function getData() {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve("Data Received");
-    }, 3000);
+  socket.on("chat message", (message) => {
+    io.emit("chat message", message);
   });
-}
 
-async function showData() {
-  console.log("Fetching...");
-  const result = await getData();
-  console.log(result);
-}
-
-showData();
-
-fs.readFile("demo.txt", "utf8", (err, data) => {
-  if (err) return console.log("Error:", err);
-  console.log("File Data:", data);
+  socket.on("disconnect", () => {
+    console.log("User disconnected:", socket.id);
+  });
 });
 
-console.log("Reading file...");
+// ====== STATIC FILES ======
+app.use(express.static(path.resolve("./public")));
 
-let myPromise = new Promise((resolve, reject) => {
-  let success = true;
-
-  if (success) {
-    resolve("WORK DONE");
-  } else {
-    reject("SOMETHING WENTS WRONG ");
-  }
+// ====== MAIN ROUTE ======
+app.get("/", (req, res) => {
+  return res.sendFile(path.resolve("./CHAT-APP/public/index.html"));
 });
 
-myPromise
-  .then((result) => console.log(result))
-  .catch((error) => console.log(error));
+// ====== START SERVER ======
+server.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
 
-function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function process() {
-  console.log("Step 1");
-  await wait(3000); // 3 sec delay
-  console.log("Step 2");
-  await wait(4000); // 4 sec delay
-  console.log("Step 3");
-}
-
-process();
-
-app.use(express.json());
-
-// Routes
-app.use("/api/auth", require("./routes/auth.routes"));
+module.exports = app;
